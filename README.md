@@ -14,5 +14,4 @@
 * Hugo Terashima Marín
 
 ## Archivos para revisión
-* Implementación de técnica ML sin framework
-  * Momento de Retroalimentación: Módulo 2 Implementación de una técnica de aprendizaje máquina sin el uso de un framework.
+* SMA0401A - Momento de Retroalimentación: Módulo 2 Implementación de una técnica de aprendizaje máquina sin el uso de un framework.
