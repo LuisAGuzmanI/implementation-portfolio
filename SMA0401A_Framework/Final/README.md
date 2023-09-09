@@ -1,4 +1,4 @@
-# SMA0401A - Retroalimentación
+# SMA0401A - Final
 
 Trabajo realizado para el entregable: Momento de Retroalimentación: Módulo 2 Implementación de una técnica de aprendizaje máquina sin el uso de un framework.
 

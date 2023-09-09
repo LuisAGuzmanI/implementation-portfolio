@@ -10,13 +10,10 @@ En el script se implementan 2 modelos de regresión (lineal y polinomial) utiliz
 
 ## Contenidos 
 
-* Student_Marks_Regression.ipynb: Archivo de Jupyter Notebook que contiene la implementación de 2 técnicas de ML sin uso de frameworks para su evaluación.
+* Student_Marks_Regression.ipynb: Archivo de Jupyter Notebook que contiene la implementación de 2 técnicas de ML sin uso de frameworks para la evaluación de la subcompetencia SMA0401A.
 * Student_Marks.csv: Archivo .csv que contiene el dataset necesario para correr el archivo previamente mencionado.
 
 ## Modificiaciones respecto a la última entrega
-
-### Exploración estadistica de datos  
-
-### Separación de datos de entrenamiento y pruebas
-
-### Evaluación con metricas de desempeño
+* Se agregó una sección de exploración de datos haciendo uso de la función ```df.describe()``` de la librería *pandas*. 
+* Se realizó una separación de los datos en 2 subconjuntos de entranamiento y prueba utilizando la función ```train_test_split(...)``` de la librería *sklearn*, con la finalidad de evaluar el desempeño de los modelos sobre datos que no ha visto anteriormente.
+* Se agrega a la graficación del modelo las estadisticas de *MSE* para ambos subconjuntos de datos, agregando un indicador número que señala la diferencia en el rendimiento del modelo en diferentes conjuntos de datos.
