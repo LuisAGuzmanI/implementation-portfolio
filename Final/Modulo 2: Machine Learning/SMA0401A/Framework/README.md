@@ -1,4 +1,4 @@
-# SMA0401A - Final
+# SMA0401A - Uso de framework o biblioteca de aprendizaje máquina para la implementación de una solución
 
 Trabajo realizado para el entregable: Momento de Retroalimentación: Módulo 2 Implementación de una técnica de aprendizaje máquina sin el uso de un framework.
 
