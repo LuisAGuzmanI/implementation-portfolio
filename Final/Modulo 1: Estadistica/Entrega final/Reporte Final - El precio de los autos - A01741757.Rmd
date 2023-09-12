@@ -1,0 +1,420 @@
+---
+title: "Reporte Final: El precio de los autos"
+subtitle: "TC3004B.104 Inteligencia Artificial Avanzada para la Ciencia de Datos I"
+author: "Luis Ángel Guzmán Iribe - A017471757"
+date: "12 de Septiembre de 2023"
+lang: "es"
+classoption: "article"
+institute: |
+  Instituto Tecnológico y de Estudios Superiores de Monterrey
+  TC3004B.104 Inteligencia Artificial Avanzada para la Ciencia de Datos I
+professors:
+  - "Ivan Mauricio Amaya Contreras"
+  - "Hugo Terashima Marín"
+  - "Blanca Rosa Ruiz Hernandez"
+  - "Antonio Carlos Bento"
+  - "Frumencio Olivas Alvarez"
+output: 
+  pdf_document:
+    toc: true # table of content true
+    toc_depth: 5  # upto three depths of headings (specified by #, ## and ###)
+    number_sections: true  ## if you want number sections at each table header
+---
+
+# Resumen
+
+En este trabajo se realiza un análisis sobre un conjunto de datos de características de automóviles con 205 instancias que contienen variables cuantitativas y cualitativas que describen las características del automóvil. Se realizaron análisis sobre estas variables como distribución de frecuencia con histogramas, colinealidad, distribución de cuartiles y valores atípicos en el caso de las variables cuantitativas; en el caso de las categóricas, se realizaron gráficas de histograma, pastel y la relación que cada categoría tiene con el precio. 
+
+Las variables seleccionadas para el modelo fueron: *carwidth*, *curbweight*, *enginesize*, *horsepower*, *citympg*, *highwaympg* y *carbody*. Se encontró una alta significancia del modelo, con un valor de R cuadrada ajustada de 0.88, así como normalidad y homocedasticidad en los residuos.
+
+# Introducción
+
+Bajo el escenario de esta actividad, una empresa automovilística china pretende entrar al mercado americano, para esto, contratan los servicios de una consultora para realizar un análisis de mercado con la finalidad de determinar qué variables de un carro son más significativas al momento de estimar el precio de un automóvil, así como generar un modelo predictivo que tome en cuentas estas características para predecir el precio de un automóvil. 
+
+Este estudio se apoya en un conjunto de datos compuesto por 205 registros que contiene información de una variedad de carros en el mercado, que nos permiten generar un modelo de regresión que utilice las variables que se describirán a continuación que nos permite conocer las variables más influenciables sobre el precio de un auto, así como la capacidad que tiene nuestro modelo de realizar predicciones sobre el valor de un auto dadas sus características. 
+
+El proceso de análisis se realiza utilizando el lenguaje y herramienta de análisis estadístico R, que se utiliza con la finalidad de facilitar el análisis de la información, limpieza del conjunto de datos, y la generación del modelo de regresión deseado para la solución del problema, así como el análisis de la validez del mismo. 
+
+La correcta implementación de las técnicas de análisis y predicción que se describen a continuación pueden resultar vitales para el éxito de la hipotética empresa china que consulta el estudio, dado que influenciados en los resultados obtenidos, se tomarían  decisiones estratégicas que prueben ser instrumentales en su incursión en el mercado automovilístico estadounidense.
+
+A medida que avancemos, detallaremos en profundidad la metodología utilizada para llevar a cabo este análisis y posteriormente presentaremos los resultados y conclusiones que se desprenden de esta evaluación.
+
+# Análisis de variables
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(MASS)
+library(ggplot2)
+library(readr)
+library(nortest)
+library(dplyr)
+library(corrplot)
+
+precios_autos <- read.csv("precios_autos.csv")
+```
+
+Antes de realizar el modelo que se utilizará para ejecutar predicciones sobre el precio de un determinado vehículo, es necesario analizar qué variables muestran correlaciones significativas que hagan que merezca la pena incluirlas en el modelo preliminar. El conjunto de datos con el que se trabaja contiene 21 variables que describen diversas características de un carro, estas variables son las siguientes:
+
+| Variable           | Descripción                                                          | Tipo       |
+|------------------- |---------------------------------------------------------------------|------------|
+| Symboling          | Su calificación de riesgo asegurado asignada. Un valor de +3 indica que el auto tiene un alto riesgo, -3 que probablemente es bastante seguro.| Categórico |
+| CarName            | Nombre de la compañía automotriz                                      | Categórico |
+| fueltype           | Tipo de combustible del auto, es decir, gasolina o diésel             | Categórico |
+| carbody            | Cuerpo del auto                                                       | Categórico |
+| drivewheel         | Tipo de tracción                                                      | Categórico |
+| enginelocation     | Ubicación del motor del auto                                          | Categórico |
+| wheelbase          | Distancia entre ejes del auto                                         | Numérico   |
+| carlength          | Longitud del auto                                                     | Numérico   |
+| carwidth           | Ancho del auto                                                        | Numérico   |
+| carheight          | Altura del auto                                                       | Numérico   |
+| curbweight         | El peso de un auto sin ocupantes o equipaje.                          | Numérico   |
+| enginetype         | Tipo de motor.                                                        | Categórico |
+| cylindernumber     | Cilindro ubicado en el auto                                           | Categórico |
+| enginesize         | Tamaño del auto                                                       | Numérico   |
+| stroke             | Carrera o volumen dentro del motor                                    | Numérico   |
+| compressionratio   | Relación de compresión del auto                                       | Numérico   |
+| horsepower         | Potencia en caballos de fuerza                                        | Numérico   |
+| peakrpm            | RPM máximo del auto                                                   | Numérico   |
+| citympg            | Consumo de combustible en ciudad                                      | Numérico   |
+| highwaympg         | Consumo de combustible en carretera                                   | Numérico   |
+| price              | Precio del auto (Variable dependiente)                                | Numérico   |
+
+Como podemos observar, tenemos una variedad de variables tanto numéricas como categóricas (también conocidas como cuantitativas y cualitativas, respectivamente), el objetivo de esta fase del escrito es encontrar aquellas variables que muestran altas correlaciones con nuestra variable objetivo (price). 
+
+Para decidir qué variables es pertinente incluir se consideran 3 criterios principales, en los que se basará todo nuestro análisis de variables. Estos criterios son los siguientes:
+
+1. Todas estas variables presentan altos índices de correlación (>0.75) con relación al precio del vehículo. 
+2. En el caso de las variables cualitativas, no existe una categoría que domine considerablemente la frecuencia en comparación a otras variables, además, es claro que la media del promedio por categoría varía considerablemente.
+3. Cuentan con pocos valores atípicos apreciables en sus boxplots, por lo que retirar estos valores no afectará a la relevancia estadística de estas variables.
+
+Una vez establecidos estos criterios, podemos proceder al análisis para elegir nuestras variables candidatas para la implementación del modelo de regresión. A continuación se encuentran 2 secciones correspondientes para el análisis de variables numéricas y categóricas. 
+
+## Variables numéricas
+
+[Ver anexo](#numericas)
+
+```{r}
+variables_cauantitativas <- c("symboling", "wheelbase", "carlength", "carwidth", "carheight", "curbweight", "enginesize", "stroke", "compressionratio", "horsepower", "peakrpm", "citympg", "highwaympg", "price")
+```
+
+### Histogramas
+
+El uso de histogramas permite hacernos una idea general de la distribución de los datos, permitiéndonos conocer si estos cuentan con una distribución normal, sesgada, y explorar valores atípicos de manera visual e intuitiva. Realizamos este análisis únicamente sobre las variables numéricas ya que no es posible calcular la distribución estadística de variables categóricas, pero sí de variables reales (continuas y discretas).  Conocer la distribución de los datos también nos permite elegir candidatos para transformaciones (cómo box cox), en caso de que sea necesario normalizar los datos para encontrar mejores resultados en la distribución de residuos del modelo.
+
+[Ver anexo](#hist)
+
+### Diagramas de caja y bigote
+
+Los diagramas de caja y bigote (o box plot) cumplen en ciertos aspectos la misma función que los histogramas, presentándonos la distribución con cuartiles de los datos, lo que nos permite detectar sesgos de manera sencilla, al igual que los valores atípicos.
+
+[Ver anexo](#boxplot)
+
+### Diagramas de dispersión
+
+Los diagramas de dispersión se generan tomando como eje x a la variable independiente y a la  el eje y toma el precio. Esto nos permite apreciar de manera visual la manera en la que se relaciona cada variable numérica con el precio de un vehículo. 
+
+[Ver anexo](#scatter)
+
+### Matriz de correlación
+
+La matriz de correlación genera un indicador numérico que indica el nivel de colinealidad que existe entre cada variable, esto nos permite conocer 2 cosas, una cantidad cuantitativa que describe el comportamiento observado en los diagramas de dispersión, permitiendo realizar evaluaciones más rigurosas sobre las variables que se consideran relevantes para el modelo. En segundo lugar, esta matriz nos permite conocer variables independientes que resulten redundantes, ya que si estas resultan ser colineales, podemos descartar una de las 2 y quedarnos con la que mejor se ajuste al precio, reduciendo de este modo la complejidad del modelo.
+
+En la gráficas que se muestran a continuación, podemos apreciar los indices de correlación entre las variables, y más importante, las correlaciones con el precio representadas como histograma. Estos valores erán de suma importancia al momento de decidir sobre que variables incluir en el modelo.
+
+```{r,echo=FALSE, out.width='.49\\linewidth', fig.width=4, fig.height=4,fig.show='hold',fig.align='center'}
+# Calcular correlaciones
+cor_matrix <- cor(precios_autos[variables_cauantitativas])
+correlacion_con_precio <- cor_matrix[14, ]
+
+corrplot(cor_matrix, method = "circle", tl.cex = 0.8)
+
+
+cor_df <- as.data.frame(as.table(correlacion_con_precio))
+
+# Borrar precio del df, su correlacion abviamente es 1
+cor_df <- cor_df[-14, ]
+
+# Create the plot using ggplot2
+ggplot(cor_df, aes(x = Var1, y = Freq)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = paste("Correlación con el precio"),
+       x = "Parametros",
+       y = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels
+```
+```{r}
+```
+
+
+## Variables categóricas
+
+```{r}
+variables_cualitativas <- c("fueltype", "carbody", "drivewheel", "enginelocation", "enginetype", "cylindernumber")
+```
+
+[Ver anexo](#categoricas)
+
+### Gráficas de pastel
+
+Las gráficas de pastel nos permiten conocer las distribuciones de las categorías de las variables cuantitativas, esto nos permite descartar variables dominadas por una sola categoría que pudieran resultar no significativas al afectar tan solo una pequeña porción de los datos.
+
+[Ver anexo](#pie)
+
+### Media de precio por categoría
+
+Graficado como histograma, este cálculo facilita la identificación de categorías significativas, si por ejemplo encontramos que una variable muestra diferencias considerables de precio por categoría, podría ser relevante para incluirlo en nuestro análisis.
+
+[Ver anexo](#cat)
+
+## Selección de variables significativas
+
+Con base en el análisis y criterios mencionados anteriormente, se seleccionan 7 variables para el modelo preliminar.
+
+**Variables cuantitativas seleccionadas:**
+
+* Car Width 
+* Curb Weigth
+* Enginesize
+* Horsepower
+* Citympg
+* Highwaympg
+
+Todas estas variables cuentan con altos índices de correlación con el precio del vehículo, y cuentan con pocos o ningún valor atípico que pudiera ocasionar sesgo en los datos; sin embargo, es posible apreciar en los histogramas que en la práctica totalidad de estas variables existen considerables sesgos o desviaciones de normalidad, por lo que se tratará de reducir estos efectos con transformaciones.
+
+**Variables cualitativas seleccionadas:**
+
+* Carbody
+
+Esta variable se seleccionó porque existe una distribución relativamente balanceada de los tipos de cuerpo de vehículo existentes en el dataset, sin existir ninguna clase decisivamente dominante sobre las demás, también se muestran diferencias considerables de media de precio entre las diferentes categorías, lo que sugiere que esta variable es significativa para determinar el precio de un auto. Es importante señalar que será necesario transformar esta variable en variables dummies, para facilitar la integración con el resto de variables cuantiativas.
+
+Estas variables seleccionadas constituyen la base del modelo preliminar y se espera que proporcionen una representación precisa y confiable de los factores que influyen en el precio de los vehículos en nuestro conjunto de datos. Es importante destacar que el proceso de selección de variables es iterativo y, en etapas posteriores, se continuará evaluando la relevancia de estas variables y se considerarán ajustes si es necesario.
+
+```{r}
+variables_eleccionadas <- c("carwidth", "curbweight", "enginesize", "horsepower", "citympg", "highwaympg", "carbody", "price")
+
+precio_autos_final <- precios_autos[, variables_eleccionadas]
+precio_autos_graficas_transformacion <- precios_autos[, variables_eleccionadas]
+```
+
+
+# Transformación de variables
+
+En iteraciones pasadas del trabajo, se encontró que el uso de las variables en su estado actual producen modelos estadísticamente significativos pero con altos niveles de heterocedasticidad en los residuos. Con la finalidad de reducir esto, se emplean transformaciones de box-cox, buscando incrementar la homocedasticidad de los residuos, además de reducir el impacto que tienen los valores atípicos sobre el modelo.
+
+En este caso podemos aplicar la ya mencionada transformación box-cox debido a que todos los valores de nuestras variables numéricas son superiores a 0, cayendo perfectamente en el rango efectivo de la transformación.
+
+[Ver anexo](#trans)
+
+```{r, include=FALSE}
+vars_to_transform <- c("price", "carwidth", "curbweight", "enginesize", "horsepower", "citympg", "highwaympg")
+
+for (var in vars_to_transform) {
+  boxcox_result <- boxcox(as.formula(paste(var, "~ 1")), data = precio_autos_final)
+  optimal_lambda <- boxcox_result$x[which.max(boxcox_result$y)]
+  cat(var, ": ", optimal_lambda, "\n")
+  
+  precio_autos_final[[var]] <- (precio_autos_final[[var]]^optimal_lambda - 1) / optimal_lambda
+  
+}
+```
+
+# Modelo de regresión lineal
+
+Una vez decididas las variables finales para la implementación del modelo, generamos una regresión lineal utilizando la función *lm* de R. Posteriormente, se hace uso de la fucnión *step*, una función que de manera iterativa retira variables consideradas como no significativas para el modelo. Sorprendentemente, y a diferencia de pasadas iteraciones de este trabajo, la función determinó que todas las variables presentes en el modelo son estadisticamente significativas para el modelo.
+
+## Verificación del modelo
+
+Posteriormente, se genera el resumen del modelo, con la finalidad de encontrar más en detalle la significancia del modelo. El modelo en general tiene un p-value de 0, un excelente valor que confirma su significacia estadistica, a su vez, contamos con un valor de R cuadrada ajustada de 0.88, un excelente indicador de la capacidad del modelo de explicar la varianza presente en los resultados.
+
+Al analizar la significacia de los coeficientes de manera individual encontramos que todos tienen valores p cercanos a 0, con el más elevado siedo 0.07 de la variable *enginesize*, que si bien no entra dentro del marjen de confainza buscado de 0.05, considero que la diferencia no es suficiente como para retirarlo del modelo. En general, observamos una excelente significancia estadistica de manera general como individual en cada coeficiente.
+
+```{r, include=FALSE}
+modelo <- lm(price ~ carwidth + curbweight + enginesize + horsepower + citympg + highwaympg + carbody, data = precio_autos_final)
+step(modelo, direction="both",trace=1)
+```
+
+```{r}
+summary(modelo)
+```
+
+ 
+## Validación del modelo
+
+### Normalidad de los residuos
+
+Analizando las gráficas de qqplot e histograma de recursos, creo que es seguro afirmar que los residuos cuentan con una distribución satisfactoriamente normal, aunque cabe recalcar algo gruesa en las colas, lo que se conoce como una distribución platicurtica.
+
+```{r,echo=FALSE, out.width='.49\\linewidth', fig.width=4, fig.height=4,fig.show='hold',fig.align='center'}
+qqnorm(modelo$residuals)
+qqline(modelo$residuals)
+
+hist(modelo$residuals,freq=FALSE, ylim = c(0, 1200), xlab = "Residuos")
+lines(density(modelo$residual),col="red")
+curve(dnorm(x,mean=mean(modelo$residuals),sd=sd(modelo$residuals)), from=min(modelo$residuals), to=max(modelo$residuals), add=TRUE, col="blue",lwd=2)
+```
+
+
+### Media 0
+
+* Paso 1. Definir la hipotesis
+
+  $H_0: \mu=0$
+
+  $H_1: \mu\neq0$
+  
+* Paso 2. Regla de decisión
+  
+  Nivel de confianza = 0.95
+  
+  $\alpha = 0.05$
+
+* Paso 3. Análisis del resultado
+```{r}
+t.test(modelo$residuals)
+```
+
+$$\alpha < p$$
+
+* Paso 4. Conclusion
+
+Como mi valor p es mayor que alfa (1 > 0.05) no puedo rechazar la hipotesis nula, lo que me permite afirmar con un alto grado de seguridad, que la hipotesis nula es correcta, y la media de los residuos es 0. La demás información del t-test también siguere fuertemente que la media de los residuos sea 0, por ejemplo, el t-value, la cantidad de desviaciones estandar de la que se encuentra la media de la muestra de la media teorizada es de 8.34e-16, es decir, prácticamente 0, lo que indica una cercanía casi absoluta de la media de la muestra a la media teorizada.
+
+### Homocedasticidad e independencia
+
+```{r,echo=FALSE, out.width='.49\\linewidth', fig.width=4, fig.height=4,fig.show='hold',fig.align='center'}
+plot(modelo$fitted.values, modelo$residuals)
+abline(h=0, col="blue")
+```
+
+Considero que se puede apreciar claramente en la gráfica la homocedasticidad de los residuos, presentando una distribución casi uniforme a lo largo del rango de la gráfica, salvo por algunos valores atipicos. La gráfica también presenta simetría, otro favorable indicador de variana uniforme entre los residuos.
+
+# Conclusión
+
+Se generó un modelo de regresión lineal adecuado para las necesidades de la actividad, el cual cumple con los factores de verificación y validez discutidos a lo largo del curso. Este modelo además se sustenta en una serie de análisis y procedimientos correspondientes tratados en el curso como transformaciones, análisis de frecuencia, transformación de variables categoricas en dummies, etc.
+
+Respondiendo a la pregunta detotante de la actividad: ¿Que valores son más influyentes en el precio de un vehiculo? Podemos regresar al modelo y análizar que coeficientes cuentan con valores absolutos más elevados, puesto que son estos los que tendrían un mayor peso sobre la predicción del modelo. Estas variables son *Carwidth* y *Carweight*, con coeficientes de 3.41 y 2.02 respectivamente; tal parece que los valores más importantes para determinar el precio de un carro, son su peso y tamaño, posiblemente devido a la cantidad de material requeridos para la fabricación. De nuevo, es importante resaltar que todos las variables seleccionadas para el modelo final son consideradas como estadisticamente significativas, por lo que son importante para la realización de predicciones precisas.
+
+# Anexos
+
+## Análisis de variables
+
+### Variables numéricas {#numericas}
+
+```{r}
+summary(precios_autos[variables_cauantitativas])
+```
+
+#### Histogramas {#hist}
+
+```{r,echo=FALSE, out.width='.49\\linewidth', fig.width=4, fig.height=4,fig.show='hold',fig.align='center'}
+for (variable in variables_cauantitativas) {
+  p <- ggplot(data = precios_autos, aes(x = .data[[variable]])) +
+    geom_histogram(binwidth = 1) +
+    labs(title = paste("Histograma de", variable), x = variable, y = "Cantidad")
+  print(p)
+}
+```
+
+#### Diagramas de caja y bigote {#boxplot}
+
+```{r,echo=FALSE, out.width='.49\\linewidth', fig.width=4, fig.height=4,fig.show='hold',fig.align='center'}
+for (variable in variables_cauantitativas) {
+  p <- ggplot(data = precios_autos, aes(x = 1, y = .data[[variable]])) +
+    geom_boxplot() +
+    labs(title = paste("Boxplot de", variable), x = variable, y = "Cantidad")
+  print(p)
+}
+```
+
+#### Diagramas de dispersión {#scatter}
+
+
+```{r,echo=FALSE, out.width='.49\\linewidth', fig.width=4, fig.height=4,fig.show='hold',fig.align='center'}
+for (variable in setdiff(variables_cauantitativas, "price")) {
+  plot(precios_autos[[variable]], precios_autos$price,
+       xlab = variable, ylab = "price",
+       main = paste("Diagrama de dispersión: ", variable, "vs Precio"))
+}
+```
+
+#### Matriz de correlación {#correlacion}
+
+```{r,echo=FALSE, out.width='.49\\linewidth', fig.width=4, fig.height=4,fig.show='hold',fig.align='center'}
+# Calcular correlaciones
+cor_matrix <- cor(precios_autos[variables_cauantitativas])
+correlacion_con_precio <- cor_matrix[14, ]
+
+corrplot(cor_matrix, method = "circle", tl.cex = 0.8)
+
+cor_df <- as.data.frame(as.table(correlacion_con_precio))
+
+# Borrar precio del df, su correlacion abviamente es 1
+cor_df <- cor_df[-14, ]
+
+# Create the plot using ggplot2
+ggplot(cor_df, aes(x = Var1, y = Freq)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = paste("Correlación con el precio"),
+       x = "Parametros",
+       y = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels
+```
+
+### Variables categóricas {#categoricas}
+
+```{r}
+table(precios_autos[variables_cualitativas]$fueltype)
+table(precios_autos[variables_cualitativas]$carbody)
+table(precios_autos[variables_cualitativas]$drivewheel)
+table(precios_autos[variables_cualitativas]$enginelocation)
+table(precios_autos[variables_cualitativas]$enginetype)
+table(precios_autos[variables_cualitativas]$cylindernumber)
+```
+
+
+#### Gráficas de pastel {#pie}
+
+```{r,echo=FALSE, out.width='.49\\linewidth', fig.width=4, fig.height=4,fig.show='hold',fig.align='center'}
+for (variable in variables_cualitativas) {
+  category_counts <- table(precios_autos[variable])
+  pie(category_counts, labels = names(category_counts), main = paste("Diagrama de pastel: ", variable))
+}
+```
+
+#### Media de precio por categoría {#cat}
+
+```{r,echo=FALSE, out.width='.49\\linewidth', fig.width=4, fig.height=4,fig.show='hold',fig.align='center'}
+for (variable in variables_cualitativas) {
+  medias <- precios_autos %>%
+    group_by(.data[[variable]]) %>%
+    summarize(media = mean(price))  # Use na.rm = TRUE to handle missing values
+
+  p <- ggplot(medias, aes(x = .data[[variable]], y = media)) +
+    geom_bar(stat = "identity") +
+    labs(title = paste("Mean Value by", variable), x = variable, y = "Mean Value")
+  
+  print(p)
+}
+```
+
+## Transformación de variables {#trans}
+
+```{r,echo=FALSE, out.width='.49\\linewidth', fig.width=4, fig.height=4,fig.show='hold',fig.align='center'}
+vars_to_transform <- c("price", "carwidth", "curbweight", "enginesize", "horsepower", "citympg", "highwaympg")
+
+for (var in vars_to_transform) {
+  boxcox_result <- boxcox(as.formula(paste(var, "~ 1")), data = precio_autos_graficas_transformacion)
+  optimal_lambda <- boxcox_result$x[which.max(boxcox_result$y)]
+  cat("Lamda optima - ", var, ": ", optimal_lambda, "\n")
+  
+  
+  precio_autos_graficas_transformacion[[var]] <- (precio_autos_graficas_transformacion[[var]]^optimal_lambda - 1) / optimal_lambda
+  
+  # Create and display histogram
+  hist(precio_autos_graficas_transformacion[[var]], main = paste("Distribución de la variable transformada -", var), 
+       xlab = "Valores transformados", col = "blue")
+}
+```
